@@ -6,11 +6,15 @@
     },
     {
       "path": "/api/scrubber",
-      "schedule": "20 * * * *"
+      "schedule": "15 * * * *"
     },
     {
       "path": "/api/enricher",
-      "schedule": "40 * * * *"
+      "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/architect",
+      "schedule": "45 * * * *"
     }
   ]
 }
