@@ -1,8 +1,15 @@
 {
+  "version": 2,
   "crons": [
     {
       "path": "/api/hunter",
       "schedule": "0 8 * * *"
     }
+  ],
+  "rewrites": [
+    { "source": "/api/hunter", "destination": "/api/hunter.py" },
+    { "source": "/api/scrubber", "destination": "/api/scrubber.py" },
+    { "source": "/api/enricher", "destination": "/api/enricher.py" },
+    { "source": "/api/architect", "destination": "/api/architect.py" }
   ]
 }
