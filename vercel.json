@@ -2,19 +2,7 @@
   "crons": [
     {
       "path": "/api/hunter",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/scrubber",
-      "schedule": "15 * * * *"
-    },
-    {
-      "path": "/api/enricher",
-      "schedule": "30 * * * *"
-    },
-    {
-      "path": "/api/architect",
-      "schedule": "45 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
