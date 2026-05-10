@@ -1,28 +1,27 @@
 import requests
-from bs4 import BeautifulSoup
-import urllib.parse
-import time
 import json
-import random
+import time
+import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 # --- 2026 PROFESSIONAL CONFIGURATION ---
+# Your Verified Credentials
 BOT_TOKEN = "8673029559:AAF4zFJC80TERVUMTvZ9ieSMWM0K-2vWGTI"
 CHAT_ID = "7909543900"
+SERPER_API_KEY = "6c182913e988a6f03588ca60e4cd657a5fb66300"
 
-# --- THE HARD FILTERS (The "Airen Scott" Protection) ---
-# If these words appear, the lead is immediately discarded.
-BLOCK_LIST = ["texas", "houston", "dallas", "nepa", "phcn", "light bill", "solar", "freezer", "rent"]
-TARGET_CITIES = ["lagos", "accra", "nairobi", "lekki", "epe", "abuja"]
+# --- THE HARD FILTERS (Keeping the junk out) ---
+BLOCK_LIST = ["texas", "houston", "dallas", "nepa", "phcn", "light bill", "solar", "freezer", "rent", "apartment for rent"]
+TARGET_CITIES = ["lagos", "accra", "nairobi", "lekki", "epe", "abuja", "ibadan"]
 
-# --- THE SEARCH ENGINE QUERIES ---
-# Focused 100% on X.com with Pan-African intent.
+# --- THE PREMIUM SEARCH QUERIES ---
+# Optimized for high-ticket diaspora investors and competitors.
 QUERIES = [
-    'site:x.com "wanna buy" (Lagos OR Accra OR Nairobi) -Texas -Houston',
-    'site:x.com "invest in property" (Nigeria OR Ghana OR Kenya) -rent',
-    'site:x.com "verified title" (Lagos OR Accra OR Nairobi) "diaspora"',
-    'site:x.com "is it safe to buy" (Lekki OR Epe OR "East Legon" OR "Kilimani")',
-    'site:x.com "recommend" "realtor" (Lagos OR Accra OR Nairobi) -USA'
+    'site:x.com "is it safe to buy land" (Lagos OR Epe OR Lekki) "verification"',
+    'site:x.com "landwey" OR "veritasi" OR "alaro city" "review" OR "legit" OR "scam"',
+    'site:x.com "Governor\'s Consent" OR "C of O" OR "Excision" (Lagos OR Abuja) "price"',
+    'site:x.com "recommend a realtor" (Lagos OR Accra) "diaspora" -USA',
+    'site:x.com "thinking of investing" (Nigeria OR Ghana) "real estate" -rent'
 ]
 
 def get_intent_tag(text):
@@ -30,44 +29,40 @@ def get_intent_tag(text):
     text = text.lower()
     if "buy" in text or "buying" in text: return "🏠 BUYER"
     if "invest" in text or "yield" in text: return "📈 INVESTOR"
-    if "title" in text or "verify" in text: return "🛡️ VERIFICATION"
+    if "title" in text or "verify" in text or "consent" in text: return "🛡️ VERIFICATION"
+    if "landwey" in text or "veritasi" in text or "alaro" in text: return "🕵️ COMPETITOR INTEL"
     return "💡 OPPORTUNITY"
 
-def is_clean_lead(title, snippet):
-    """The 'No-Noise' Filter. Checks if the lead is actually about your target market."""
-    combined = (title + " " + snippet).lower()
-    
-    # Rule 1: Check for Blocked terms
-    for word in BLOCK_LIST:
-        if word in combined:
-            return False
-            
-    # Rule 2: Must mention at least one target African location or "Nigeria/Ghana/Kenya"
+def is_clean_lead(text):
+    """The 'No-Noise' Filter. Checks for location and blocklisted terms."""
+    text = text.lower()
+    # Rule 1: Instant discard for blocked terms
+    if any(word in text for word in BLOCK_LIST):
+        return False
+    # Rule 2: Must mention a target region or country
     continents = ["nigeria", "ghana", "kenya", "africa"]
-    if any(loc in combined for loc in TARGET_CITIES + continents):
+    if any(loc in text for loc in TARGET_CITIES + continents):
         return True
-        
     return False
 
 def send_telegram_card(name, location, text, link):
-    """Sends a high-end, clean lead card to your Telegram Bot."""
+    """Sends a high-end, agency-style lead card to your Telegram Bot."""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    
     intent = get_intent_tag(text)
     
-    # Modern, agency-style layout
+    # AGENCY BRANDED LAYOUT
     message = (
         f"💎 **{intent} FOUND**\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 **User:** {name}\n"
+        f"👤 **Lead:** {name}\n"
         f"📍 **Focus:** {location.upper()}\n"
-        f"🌐 **Source:** 🐦 X (Twitter)\n"
+        f"🌐 **Source:** 🐦 X (via Serper)\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"📝 **Signal:** \"{text[:160]}...\"\n"
+        f"📝 **Signal:** \"{text[:180]}...\"\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
         f"🔗 [OPEN X PROFILE]({link})\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "🛡️ *Verified by Superite Partner Engine*"
+        "🛡️ *Davies | Superite Partner Engine*"
     )
     
     payload = {
@@ -84,49 +79,43 @@ def send_telegram_card(name, location, text, link):
 class handler(BaseHTTPRequestHandler):
     """Vercel Entry Point"""
     def do_GET(self):
-        agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        ]
-        
-        headers = {'User-Agent': random.choice(agents)}
         total_leads = 0
+        serper_url = "https://google.serper.dev/search"
+        headers = {
+            'X-API-KEY': SERPER_API_KEY,
+            'Content-Type': 'application/json'
+        }
 
         for query in QUERIES:
-            encoded_query = urllib.parse.quote(query)
-            search_url = f"https://www.google.com/search?q={encoded_query}"
-            
+            # We use POST for Serper for cleaner results
+            payload = json.dumps({"q": query, "num": 15})
             try:
-                response = requests.get(search_url, headers=headers, timeout=15)
-                soup = BeautifulSoup(response.text, 'html.parser')
+                response = requests.post(serper_url, headers=headers, data=payload, timeout=15)
+                # Parse the 'organic' results from Serper
+                results = response.json().get('organic', [])
                 
-                for result in soup.select('.tF2Cxc'):
-                    title_elem = result.select_one('.DKV0Md')
-                    link_elem = result.select_one('.yuRUbf a')
-                    snippet_elem = result.select_one('.VwiC3b')
+                for result in results:
+                    title = result.get('title', '')
+                    snippet = result.get('snippet', '')
+                    link = result.get('link', '')
 
-                    if title_elem and link_elem:
-                        title = title_elem.text
-                        snippet = snippet_elem.text if snippet_elem else ""
-                        link = link_elem['href']
-
-                        # APPLY THE PREMIUM FILTERS
-                        if is_clean_lead(title, snippet):
-                            name = title.split('(@')[0].split('|')[0].strip()
-                            
-                            # Identify Location
-                            found_loc = "Pan-Africa"
-                            for city in TARGET_CITIES:
-                                if city in (title + snippet).lower():
-                                    found_loc = city
-                                    break
-                            
-                            send_telegram_card(name, found_loc, snippet, link)
-                            total_leads += 1
-                            time.sleep(1.5) 
-
+                    # Apply Premium Filtering
+                    if is_clean_lead(title + " " + snippet):
+                        # Clean X profile name
+                        name = title.split('(@')[0].split('|')[0].strip()
+                        
+                        # Identify specific city for the tag
+                        found_loc = "Pan-Africa"
+                        for city in TARGET_CITIES:
+                            if city in (title + snippet).lower():
+                                found_loc = city
+                                break
+                        
+                        send_telegram_card(name, found_loc, snippet, link)
+                        total_leads += 1
+                        
             except Exception as e:
-                print(f"Skipping query due to error: {e}")
+                print(f"Query Error: {e}")
 
         # Vercel Success Response
         self.send_response(200)
@@ -134,7 +123,8 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps({
             "status": "active",
-            "leads_pushed": total_leads,
-            "targeting": "X_ONLY_PAN_AFRICA"
+            "partner": "Davies | Superite Africa",
+            "engine": "Serper_Premium_2026",
+            "leads_pushed": total_leads
         }).encode())
     
